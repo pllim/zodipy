@@ -30,9 +30,29 @@ DELTA_RMM = {
     ComponentLabel.INTERSTELLAR: DELTA_SMALL_GRAINS,
 }
 
+T_0_AKARI = {
+    ComponentLabel.CLOUD: T_0_DIRBE,
+    ComponentLabel.BAND1: T_0_DIRBE,
+    ComponentLabel.BAND2: T_0_DIRBE,
+    ComponentLabel.BAND3: T_0_DIRBE,
+    ComponentLabel.RING: T_0_DIRBE,
+    ComponentLabel.FEATURE: T_0_DIRBE,
+    ComponentLabel.INTERSTELLAR: 270,
+}
+DELTA_AKARI = {
+    ComponentLabel.CLOUD: 0.458,
+    ComponentLabel.BAND1: 0.458,
+    ComponentLabel.BAND2: 0.458,
+    ComponentLabel.BAND3: 0.458,
+    ComponentLabel.RING: 0.458,
+    ComponentLabel.FEATURE: 0.458,
+    ComponentLabel.INTERSTELLAR: 0.458,
+}
+
 SPECTRUM_PLANCK = u.Quantity([100.0, 143.0, 217.0, 353.0, 545.0, 857.0], u.GHz)
 SPECTRUM_DIRBE = u.Quantity([1.25, 2.2, 3.5, 4.9, 12, 25, 60, 100, 140, 240], u.micron)
 SPECTRUM_IRAS = u.Quantity([12, 25, 60, 100], u.micron)
+SPECTRUM_AKARI = u.Quantity([9.0, 18.0], u.micron)
 
 #! TODO: Figure out calibration and source evaluation for rrm-experimental
 # CALIBRATION_RRM = (2.45, 2.42, 2.24, 1.97)
@@ -144,6 +164,38 @@ EMISSIVITY_DIRBE = {
         0.85763800994217443,
     ),
 }
+
+EMISSIVITY_AKARI = {
+    ComponentLabel.CLOUD: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.BAND1: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.BAND2: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.BAND3: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.RING: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.FEATURE: (
+        0.8575,
+        1.0,
+    ),
+    ComponentLabel.INTERSTELLAR: (
+        0.191e-8,
+        0.246e-8,
+    ),
+}
+
 
 ALBEDO_DIRBE = {
     ComponentLabel.CLOUD: (

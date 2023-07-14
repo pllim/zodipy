@@ -69,3 +69,14 @@ model_registry.register_model(
         delta=source_params.DELTA_RMM,
     ),
 )
+
+model_registry.register_model(
+    name="akari",
+    model=Kelsall(
+        comps=comps.AKARI,
+        spectrum=source_params.SPECTRUM_AKARI,
+        emissivities=source_params.EMISSIVITY_AKARI,
+        T_0=source_params.T_0_AKARI,
+        delta=source_params.DELTA_AKARI,
+    ),
+)

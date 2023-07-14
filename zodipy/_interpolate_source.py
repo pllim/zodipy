@@ -85,8 +85,22 @@ def get_source_parameters_kelsall_comp(
     source_parameters["common"] = {}
     source_parameters["common"]["phase_coefficients"] = tuple(phase_coefficients)
     source_parameters["common"]["solar_irradiance"] = solar_irradiance
-    source_parameters["common"]["T_0"] = model.T_0
-    source_parameters["common"]["delta"] = model.delta
+
+    if isinstance(model.T_0, dict):
+        for comp_label in model.comps:
+            if comp_label not in source_parameters:
+                source_parameters[comp_label] = {}
+            source_parameters[comp_label]["T_0"] = model.T_0[comp_label]
+    else:
+        source_parameters["common"]["T_0"] = model.T_0
+
+    if isinstance(model.delta, dict):
+        for comp_label in model.comps:
+            if comp_label not in source_parameters:
+                source_parameters[comp_label] = {}
+            source_parameters[comp_label]["delta"] = model.delta[comp_label]
+    else:
+        source_parameters["common"]["delta"] = model.delta
 
     return source_parameters
 

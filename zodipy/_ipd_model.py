@@ -46,8 +46,8 @@ class InterplanetaryDustModel(ABC):
 class Kelsall(InterplanetaryDustModel):
     """Kelsall et al. (1998) model."""
 
-    T_0: float
-    delta: float
+    T_0: float | Mapping[ComponentLabel, float]
+    delta: float | Mapping[ComponentLabel, float]
     emissivities: Mapping[ComponentLabel, Sequence[float]]
     albedos: Mapping[ComponentLabel, Sequence[float]] | None = None
     solar_irradiance: Sequence[float] | None = None  # In units of MJy/sr

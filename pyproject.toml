@@ -93,6 +93,7 @@ ignore = [
     "D105",
     "D107",
     "ANN101",
+    "C901",
 ]
 exclude = ["tests/*"]
 
