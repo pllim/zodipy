@@ -17,7 +17,7 @@ from zodipy._emission import EMISSION_MAPPING
 from zodipy._interpolate_source import SOURCE_PARAMS_MAPPING
 from zodipy._ipd_comps import ComponentLabel
 from zodipy._ipd_dens_funcs import construct_density_partials_comps
-from zodipy._line_of_sight import get_line_of_sight_start_and_stop_distances
+from zodipy._line_of_sight import get_line_of_sight_distances
 from zodipy._sky_coords import get_obs_and_earth_positions
 from zodipy._unit_vectors import get_unit_vectors_from_ang, get_unit_vectors_from_pixels
 from zodipy._validators import get_validated_ang, get_validated_pix
@@ -97,7 +97,7 @@ class Zodipy:
             fill_value="extrapolate" if self.extrapolate else np.nan,
         )
         self._ipd_model = model_registry.get_model(model)
-        self._gauss_points_and_weights = np.polynomial.legendre.leggauss(gauss_quad_degree)
+        self._gauss_points_and_weights = np.polynomial.laguerre.laggauss(self.gauss_quad_degree)
 
     @property
     def supported_observers(self) -> list[str]:
@@ -429,7 +429,7 @@ class Zodipy:
 
         # Get the integration limits for each zodiacal component (which may be
         # different or the same depending on the model) along all line of sights.
-        start, stop = get_line_of_sight_start_and_stop_distances(
+        stop = get_line_of_sight_distances(
             components=self._ipd_model.comps.keys(),
             unit_vectors=unit_vectors,
             obs_pos=observer_position,
@@ -457,37 +457,36 @@ class Zodipy:
             integrated_comp_emission = np.zeros((len(self._ipd_model.comps), unit_vectors.shape[1]))
             with multiprocessing.get_context(SYS_PROC_START_METHOD).Pool(processes=n_proc) as pool:
                 for idx, comp_label in enumerate(self._ipd_model.comps.keys()):
-                    stop_chunks = np.array_split(stop[comp_label], n_proc, axis=-1)
-                    if start[comp_label].size == 1:
-                        start_chunks = [start[comp_label]] * n_proc
-                    else:
-                        start_chunks = np.array_split(start[comp_label], n_proc, axis=-1)
                     comp_integrands = [
                         partial(
                             common_integrand,
                             u_los=np.expand_dims(unit_vectors, axis=-1),
-                            start=np.expand_dims(start, axis=-1),
-                            stop=np.expand_dims(stop, axis=-1),
                             get_density_function=density_partials[comp_label],
                             **source_parameters[comp_label],
                         )
-                        for unit_vectors, start, stop in zip(
-                            unit_vector_chunks, start_chunks, stop_chunks
+                        for unit_vectors in unit_vector_chunks
+                    ]
+                    stop_chunks = np.array_split(stop[comp_label], n_proc, axis=-1)
+                    quad_partials = [
+                        partial(
+                            _integrate_gauss_laguerre,
+                            points=self._gauss_points_and_weights[0],
+                            weights=self._gauss_points_and_weights[1],
+                            stop=np.expand_dims(stop, axis=-1),
                         )
+                        for stop in stop_chunks
                     ]
 
                     proc_chunks = [
                         pool.apply_async(
-                            _integrate_gauss_quad,
-                            args=(comp_integrand, *self._gauss_points_and_weights),
+                            quad_partial,
+                            args=[comp_integrand],
                         )
-                        for comp_integrand in comp_integrands
+                        for comp_integrand, quad_partial in zip(comp_integrands, quad_partials)
                     ]
 
-                    integrated_comp_emission[idx] += (
-                        np.concatenate([result.get() for result in proc_chunks])
-                        * 0.5
-                        * (stop[comp_label] - start[comp_label])
+                    integrated_comp_emission[idx] += np.concatenate(
+                        [result.get() for result in proc_chunks]
                     )
 
         else:
@@ -498,16 +497,13 @@ class Zodipy:
                 comp_integrand = partial(
                     common_integrand,
                     u_los=unit_vectors_expanded,
-                    start=np.expand_dims(start[comp_label], axis=-1),
-                    stop=np.expand_dims(stop[comp_label], axis=-1),
                     get_density_function=density_partials[comp_label],
                     **source_parameters[comp_label],
                 )
-
-                integrated_comp_emission[idx] = (
-                    _integrate_gauss_quad(comp_integrand, *self._gauss_points_and_weights)
-                    * 0.5
-                    * (stop[comp_label] - start[comp_label])
+                integrated_comp_emission[idx] = _integrate_gauss_laguerre(
+                    comp_integrand,
+                    *self._gauss_points_and_weights,
+                    stop=np.expand_dims(stop[comp_label], axis=-1),
                 )
 
         emission = np.zeros(
@@ -543,10 +539,17 @@ class Zodipy:
         return repr_str[:-2] + ")"
 
 
-def _integrate_gauss_quad(
+def _integrate_gauss_laguerre(
     fn: Callable[[float], npt.NDArray[np.float64]],
     points: npt.NDArray[np.float64],
     weights: npt.NDArray[np.float64],
+    stop: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
-    """Integrate a function using Gauss-Legendre quadrature."""
-    return np.squeeze(sum(fn(x) * w for x, w in zip(points, weights)))
+    """Integrate a function using Gauss-Laguerre quadrature.
+
+    If a stop is provided, the integral is rescaled from 0 -> infty to 0 -> stop.
+    """
+    scale_factor = stop / points[-1]
+    return np.squeeze(
+        scale_factor * sum(fn(x * scale_factor) * np.exp(x) * w for x, w in zip(points, weights))
+    )

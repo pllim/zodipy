@@ -222,7 +222,7 @@ def any_obs(draw: DrawFn, model: zodipy.Zodipy) -> str:
 
 MODEL_STRATEGY_MAPPINGS: dict[str, SearchStrategy[Any]] = {
     "model": sampled_from(AVAILABLE_MODELS),
-    "gauss_quad_degree": integers(min_value=1, max_value=200),
+    "gauss_quad_degree": integers(min_value=10, max_value=100),
     "extrapolate": booleans(),
     "solar_cut": quantities(min_value=0, max_value=360, unit=u.deg),
 }

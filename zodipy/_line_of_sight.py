@@ -17,8 +17,8 @@ DIRBE_CUTOFFS: dict[ComponentLabel, tuple[float | np.float64, float]] = {
     ComponentLabel.BAND1: (R_0, R_JUPITER),
     ComponentLabel.BAND2: (R_0, R_JUPITER),
     ComponentLabel.BAND3: (R_0, R_JUPITER),
-    ComponentLabel.RING: (R_EARTH - 0.2, R_EARTH + 0.2),
-    ComponentLabel.FEATURE: (R_EARTH - 0.2, R_EARTH + 0.2),
+    ComponentLabel.RING: (R_EARTH - 0.5, R_EARTH + 0.5),
+    ComponentLabel.FEATURE: (R_EARTH - 0.5, R_EARTH + 0.5),
 }
 
 RRM_CUTOFFS: dict[ComponentLabel, tuple[float | np.float64, float]] = {
@@ -78,21 +78,13 @@ def get_sphere_intersection(
     return np.maximum(q, c / q)
 
 
-def get_line_of_sight_start_and_stop_distances(
+def get_line_of_sight_distances(
     components: Iterable[ComponentLabel],
     unit_vectors: npt.NDArray[np.float64],
     obs_pos: npt.NDArray[np.float64],
-) -> tuple[
-    dict[ComponentLabel, npt.NDArray[np.float64]],
-    dict[ComponentLabel, npt.NDArray[np.float64]],
-]:
-    """Get the start and stop distances for each component."""
-    start = {
-        comp: get_sphere_intersection(obs_pos, unit_vectors, COMPONENT_CUTOFFS[comp][0])
-        for comp in components
-    }
-    stop = {
+) -> dict[ComponentLabel, npt.NDArray[np.float64]]:
+    """Get the maximum integration length for each component."""
+    return {
         comp: get_sphere_intersection(obs_pos, unit_vectors, COMPONENT_CUTOFFS[comp][1])
         for comp in components
     }
-    return start, stop
